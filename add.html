@@ -1,0 +1,196 @@
+<!doctype html>
+<!--
+Hiking Buddies Event System
+Created by Joseph Timmons
+Version 1.0.0
+Purpose: Structured hike ingestion and searchable listings
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="author" content="Joseph Timmons">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add Hike</title>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 40px auto;
+      max-width: 900px;
+      padding: 0 20px;
+      color: #1f2937;
+      background: #f9fafb;
+    }
+    textarea {
+      width: 100%;
+      height: 180px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-family: monospace;
+    }
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 22px;
+      border: 1px solid #e5e7eb;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+    input, select {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      width: 100%;
+      background: white;
+    }
+    .btn {
+      margin-top: 12px;
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+      background: white;
+      cursor: pointer;
+    }
+    .btn:hover { background: #f3f4f6; }
+    .err { color: #b91c1c; font-size: 0.85em; margin-top: 4px; }
+    footer { margin-top: 40px; font-size: 0.85em; color: #6b7280; text-align: center; }
+  </style>
+</head>
+<body>
+
+<h1>Add a Hike</h1>
+
+<form method="post" action="/add">
+  <p>Paste your structured hike block below, then click the button to fill the form.</p>
+  <textarea name="raw">{{ raw }}</textarea>
+  <button class="btn" type="submit">Fill the form from pasted text</button>
+</form>
+
+<div class="box">
+  <h2>Review and Publish</h2>
+
+  <form method="post" action="/events">
+    {% set pm = (parsed.get('mountain') or '')|lower %}
+
+    <div class="row">
+      <div>Mountain *</div>
+      <div>
+        <select name="mountain_id" required>
+          <option value="">Select...</option>
+          {% for m in mountains %}
+            {% set mn = (m.name or '')|lower %}
+            <option value="{{ m.id }}" {% if pm and (pm == mn or pm in mn or mn in pm) %}selected{% endif %}>
+              {{ m.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Start Date *</div>
+      <div>
+        <input type="date" name="start_date"
+               value="{{ parsed.get('start_date').isoformat() if parsed.get('start_date') else '' }}"
+               required>
+        {% if errors.get('start_date') %}<div class="err">{{ errors.get('start_date') }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Arrive Time</div>
+      <div>
+        <input type="time" name="arrive_time"
+               value="{{ parsed.get('arrive_time').strftime('%H:%M') if parsed.get('arrive_time') else '' }}">
+        {% if errors.get('arrive_time') %}<div class="err">{{ errors.get('arrive_time') }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Hike Time</div>
+      <div>
+        <input type="time" name="hike_time"
+               value="{{ parsed.get('hike_time').strftime('%H:%M') if parsed.get('hike_time') else '' }}">
+        {% if errors.get('hike_time') %}<div class="err">{{ errors.get('hike_time') }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Trailhead</div>
+      <div>
+        <input name="trailhead" value="{{ parsed.get('trailhead','') }}">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Distance (mi) *</div>
+      <div>
+        <input name="distance_miles" value="{{ parsed.get('distance_miles','') }}" required>
+        {% if errors.get('distance_miles') %}<div class="err">{{ errors.get('distance_miles') }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Pace *</div>
+      <div>
+        <select name="pace" required>
+          <option value="">Select...</option>
+          {% for p in pace_choices %}
+            <option value="{{ p }}" {% if parsed.get('pace') == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.get('pace') %}<div class="err">{{ errors.get('pace') }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Dog Friendly *</div>
+      <div>
+        <select name="dog_friendly" required>
+          <option value="">Select...</option>
+          <option value="Yes" {% if parsed.get('dog_friendly') is sameas true %}selected{% endif %}>Yes</option>
+	  <option value="No" {% if parsed.get('dog_friendly') is sameas false %}selected{% endif %}>No</option>
+        </select>
+        {% if errors.get('dog_friendly') %}<div class="err">{{ errors.get('dog_friendly') }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Facebook Link *</div>
+      <div>
+        <input name="fb_link" value="{{ parsed.get('fb_link','') }}" required>
+        {% if errors.get('fb_link') %}<div class="err">{{ errors.get('fb_link') }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Organizer</div>
+      <div>
+        <input name="organizer" value="{{ parsed.get('organizer','') }}">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>Notes</div>
+      <div>
+        <textarea name="notes" style="height:110px;">{{ parsed.get('notes','') }}</textarea>
+      </div>
+    </div>
+
+    <button class="btn" type="submit">Publish</button>
+  </form>
+</div>
+
+<footer>
+  Hiking Buddies Event System • Built by Joseph Timmons
+</footer>
+
+</body>
+</html>
